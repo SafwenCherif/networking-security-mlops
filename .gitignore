@@ -23,3 +23,4 @@ deepuser_credentials.csv
 accesskey.csv
 *credentials*.csv
 *accesskey*.csv
+*.pem

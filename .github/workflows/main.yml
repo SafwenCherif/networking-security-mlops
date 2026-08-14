@@ -63,7 +63,7 @@ jobs:
   continuous-deployment:
     name: Continuous Deployment
     needs: build-and-push-ecr-image
-    runs-on: self-hosted
+    runs-on: [self-hosted, Linux, X64, networksecurity]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -94,6 +94,7 @@ jobs:
           ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
         run: |
           docker run -d -p 8080:8080 --name=networksecurity \
+            --restart unless-stopped \
             -e AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} \
             -e AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
             -e AWS_REGION=${{ secrets.AWS_REGION }} \
@@ -101,6 +102,19 @@ jobs:
             -e MONGO_DB_URL=${{ secrets.MONGO_DB_URL }} \
             -e MONGODB_URL_KEY=${{ secrets.MONGO_DB_URL }} \
             $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+      - name: Wait for API health
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8080/docs >/dev/null; then
+              echo "FastAPI is up on port 8080"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Container failed health check"
+          docker logs networksecurity || true
+          exit 1
 
       - name: Clean unused Docker resources
         run: docker system prune -f
