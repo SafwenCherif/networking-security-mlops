@@ -13,6 +13,9 @@ if [ -z "${RUNNER_TOKEN:-}" ]; then
   exit 1
 fi
 
+echo "=== Installing AWS CLI ==="
+sudo apt-get install -y awscli
+
 echo "=== Installing Docker ==="
 sudo apt-get update -y
 sudo apt-get install -y ca-certificates curl gnupg

@@ -64,44 +64,40 @@ jobs:
     name: Continuous Deployment
     needs: build-and-push-ecr-image
     runs-on: [self-hosted, Linux, X64, networksecurity]
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
+      ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
       - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          ECR_REGISTRY="${ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
+          aws ecr get-login-password --region "${AWS_DEFAULT_REGION}" \
+            | docker login --username AWS --password-stdin "${ECR_REGISTRY}"
+          echo "ECR_REGISTRY=${ECR_REGISTRY}" >> "$GITHUB_ENV"
 
       - name: Pull latest image
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
-        run: docker pull $ECR_REGISTRY/$ECR_REPOSITORY:latest
+        run: docker pull "${ECR_REGISTRY}/${ECR_REPOSITORY}:latest"
 
       - name: Stop previous container
         run: docker rm -f networksecurity || true
 
       - name: Run Docker container
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
         run: |
           docker run -d -p 8080:8080 --name=networksecurity \
             --restart unless-stopped \
-            -e AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} \
-            -e AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
-            -e AWS_REGION=${{ secrets.AWS_REGION }} \
-            -e TRAINING_BUCKET_NAME=${{ secrets.TRAINING_BUCKET_NAME }} \
-            -e MONGO_DB_URL=${{ secrets.MONGO_DB_URL }} \
-            -e MONGODB_URL_KEY=${{ secrets.MONGO_DB_URL }} \
-            $ECR_REGISTRY/$ECR_REPOSITORY:latest
+            -e AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}" \
+            -e AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}" \
+            -e AWS_REGION="${AWS_DEFAULT_REGION}" \
+            -e TRAINING_BUCKET_NAME="${{ secrets.TRAINING_BUCKET_NAME }}" \
+            -e MONGO_DB_URL="${{ secrets.MONGO_DB_URL }}" \
+            -e MONGODB_URL_KEY="${{ secrets.MONGO_DB_URL }}" \
+            "${ECR_REGISTRY}/${ECR_REPOSITORY}:latest"
 
       - name: Wait for API health
         run: |
