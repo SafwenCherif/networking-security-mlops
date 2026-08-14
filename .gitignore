@@ -1,4 +1,5 @@
 venv/
+.tools/
 .env
 __pycache__/
 *.pyc
@@ -9,8 +10,16 @@ Artifacts/
 final_model/
 prediction_output/
 mlruns/
+mlflow.db
+mlartifacts/
 *.pkl
 *.npy
 
 # Instructor reference code — keep local only, not in GitHub repo
 Source-code/
+
+# Never commit AWS or local credential files
+deepuser_credentials.csv
+accesskey.csv
+*credentials*.csv
+*accesskey*.csv
