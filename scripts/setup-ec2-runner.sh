@@ -13,8 +13,12 @@ if [ -z "${RUNNER_TOKEN:-}" ]; then
   exit 1
 fi
 
-echo "=== Installing AWS CLI ==="
-sudo apt-get install -y awscli
+echo "=== Installing AWS CLI v2 ==="
+sudo apt-get install -y unzip curl
+curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip
+unzip -q /tmp/awscliv2.zip -d /tmp
+sudo /tmp/aws/install
+rm -rf /tmp/aws /tmp/awscliv2.zip
 
 echo "=== Installing Docker ==="
 sudo apt-get update -y
