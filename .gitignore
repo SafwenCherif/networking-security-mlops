@@ -1,0 +1,16 @@
+venv/
+.env
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+logs/
+Artifacts/
+final_model/
+prediction_output/
+mlruns/
+*.pkl
+*.npy
+
+# Instructor reference code — keep local only, not in GitHub repo
+Source-code/
