@@ -68,11 +68,11 @@ The design follows production MLOps principles:
 ```mermaid
 flowchart TB
     subgraph Data
-        CSV[Network_Data/phisingData.csv]
-        MONGO[(MongoDB Atlas\nNetworkSecurityDB.PhishingRecords)]
+        CSV["Network_Data phisingData.csv"]
+        MONGO[(MongoDB Atlas PhishingRecords)]
     end
 
-    subgraph Training["Training Pipeline (local or /train)"]
+    subgraph Training["Training Pipeline local or train endpoint"]
         DI[Data Ingestion]
         DV[Data Validation]
         DT[Data Transformation]
@@ -81,31 +81,35 @@ flowchart TB
     end
 
     subgraph Storage
-        ART[Artifacts/ timestamp /]
-        FM[final_model/]
+        ART["Artifacts timestamp dir"]
+        FM["final_model"]
         S3[(Amazon S3)]
     end
 
     subgraph Delivery["CI/CD"]
         GH[GitHub Actions]
         ECR[Amazon ECR]
-        EC2[EC2 + Self-hosted Runner]
+        EC2["EC2 Self-hosted Runner"]
     end
 
     subgraph Serving
-        API[FastAPI :8080]
-        PRED[/predict]
-        TRAIN[/train]
+        API["FastAPI port 8080"]
+        PRED["POST predict"]
+        TRAIN["GET train"]
     end
 
     CSV -->|push_data.py ETL| MONGO
     MONGO --> DI --> DV --> DT --> MT
     MT --> MLF
-    DI & DV & DT & MT --> ART
+    DI --> ART
+    DV --> ART
+    DT --> ART
+    MT --> ART
     MT --> FM
-    ART & FM --> S3
+    ART --> S3
+    FM --> S3
 
-    GH -->|build & push| ECR
+    GH -->|build and push| ECR
     ECR -->|pull| EC2
     S3 -->|entrypoint.sh sync| EC2
     EC2 --> API
