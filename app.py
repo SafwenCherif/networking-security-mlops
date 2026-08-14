@@ -78,9 +78,13 @@ async def predict_route(request: Request, file: UploadFile = File(...)):
         os.makedirs("prediction_output", exist_ok=True)
         df.to_csv(os.path.join("prediction_output", "output.csv"), index=False)
         table_html = df.to_html(classes="table table-striped")
-        return templates.TemplateResponse("table.html", {"request": request, "table": table_html})
+        return templates.TemplateResponse(
+            request,
+            "table.html",
+            {"request": request, "table": table_html},
+        )
     except Exception as e:
-        raise NetworkSecurityException(e, sys)
+        raise NetworkSecurityException(e, sys) from e
 
 
 if __name__ == "__main__":
